@@ -1,13 +1,24 @@
 package org.zerock.controller;
 
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Date;
 
+import javax.imageio.ImageIO;
 import javax.servlet.http.HttpSession;
 
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -123,6 +134,7 @@ public class LoginController {
 		refreshToken = oauthToken.getRefreshToken();
 		 
 		result = naverLoginBO.crollingPost(oauthToken,2);
+		result = naverLoginBO.crollingPost(oauthToken,1);
 	
 		return;
 	}
@@ -147,4 +159,93 @@ public class LoginController {
 		return;
 		
 	}
+	
+	//다트 크롤링
+	@RequestMapping(value = "/dart")
+	public void dartPost()
+			throws IOException, ParseException, InterruptedException {
+		int result = 0;
+		
+		System.out.println("현재토크상황 ="+oauthToken.toString());
+	
+		refreshToken = oauthToken.getRefreshToken();
+		 
+		result = naverLoginBO.crollingPost(oauthToken,3);
+	
+		return;
+	}
+	
+	
+	/*
+	//다트 내용가져오기
+	
+	@RequestMapping(value = "/screenshot")
+	public void screenshot() throws FileNotFoundException, IOException {
+		
+		// 크롬 드라이버의 경로를 설정
+				System.setProperty("webdriver.chrome.driver", System.getProperty("user.dir") + "/chromedriver.exe");
+		    
+				// 드라이버 실행
+				WebDriver driver = new ChromeDriver();
+				driver.get("http://www.naver.com/");
+				
+				TakesScreenshot screenshot = (TakesScreenshot)driver;
+				byte[] imageByte = screenshot.getScreenshotAs(OutputType.BYTES);
+				try (FileOutputStream fos = new FileOutputStream(System.getProperty("user.dir") + "/screenshot.png")) {
+				   fos.write(imageByte);
+				   fos.close();
+				}
+				
+				// 드라이버 종료
+				driver.quit();
+		
+	}
+	*/
+	/*
+	//스크린샷 전체
+	@RequestMapping(value = "/hole")
+	public void holepage() throws IOException {
+		WebDriver webDriver = new ChromeDriver();
+		System.setProperty("webdriver.chrome.driver", System.getProperty("user.dir") + "/chromedriver.exe");
+		webDriver.get("http://dart.fss.or.kr/dsaf001/main.do?rcpNo=20210817901614");
+		   JavascriptExecutor js = ((JavascriptExecutor) webDriver);
+	        // Scroll right to the top
+	        js.executeScript("window.scrollTo(0,0)");
+	        // Get the height of the screen
+	        int windowHeight = ((Number) js.executeScript("return window.innerHeight")).intValue();
+	        // Get the total height of the page
+	        int pageHeight = ((Number) js.executeScript("return document.body.scrollHeight")).intValue();
+	        // Calculate the number of full screen shots
+	        double fullFraction = pageHeight / windowHeight;
+	        int fullShots = (int) fullFraction; // this simply removes the decimals
+	        // Initialise ouput image
+	        int imageWidth = webDriver.manage().window().getSize().width;
+	        BufferedImage fullScreenshot = new BufferedImage(imageWidth, pageHeight, BufferedImage.TYPE_4BYTE_ABGR);
+	        // Get the graphics
+	        Graphics2D fullGraphics = fullScreenshot.createGraphics();
+	        // Calculate our scroll script
+	        String script = "window.scrollBy(0," + String.valueOf(windowHeight) + ")";
+	        // Loop - for the required number of full screenshots
+	        for (int aShot = 0; aShot < fullShots; aShot ++) {
+	            // Sort out the screenshot and paste it in the correct place
+	            pasteScreenshot(fullGraphics, aShot * windowHeight,webDriver);
+	            // scroll
+	            js.executeScript(script);
+	        }
+	        // Final phase - scroll to the bottom
+	        js.executeScript(script); // we know this goes too far down, but should be OK.
+	        // Take final screenshot and paste at the bottom
+	        pasteScreenshot(fullGraphics, pageHeight - windowHeight,webDriver);
+	        // Save the whole thing to output file.
+	        ImageIO.write(fullScreenshot, "PNG", new File(System.getProperty("user.dir")+"/screent.png"));
+	}
+	//부분스크린샷
+	private void pasteScreenshot (Graphics2D outputGraphics, int yCoordinate, WebDriver webDriver ) throws IOException {
+        // Take screenshot and hold it as an image
+        File tmpFile = ((TakesScreenshot)webDriver).getScreenshotAs(OutputType.FILE);
+        BufferedImage tmpImage = ImageIO.read(tmpFile);
+        // Draw it on the graphics of the final output image
+        outputGraphics.drawImage(tmpImage, null, 0, yCoordinate);
+    }
+    */
 }

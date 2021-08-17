@@ -33,7 +33,7 @@ import com.github.scribejava.core.oauth.OAuth20Service;
 public class NaverLoginBO {
 
 	private final Logger LOGGER = LoggerFactory.getLogger(NaverLoginBO.class.getName());
-	
+
 	// client_id: 애플리케이션 등록 후 발급받은 클라이언트 아이디
 	// response_type: 인증 과정에 대한 구분값. code로 값이 고정돼 있습니다.
 	// redirect_uri: 네이버 로그인 인증의 결과를 전달받을 콜백 URL(URL 인코딩). 애플리케이션을 등록할 때 Callback
@@ -77,19 +77,19 @@ public class NaverLoginBO {
 		}
 		return null;
 	}
-	
+
 	/* 네이버아이디로 Callback 처리 및 RefreshToken 획득 Method */
-	 public String getRefreshToken(String refreshToken) throws IOException, ParseException {
-		    String apiURL;
-		    apiURL = "https://nid.naver.com/oauth2.0/token?grant_type=refresh_token&";
-		    apiURL += "client_id=" + CLIENT_ID;
-		    apiURL += "&client_secret=" + CLIENT_SECRET;
-		    apiURL += "&refresh_token=" + refreshToken;
-		    System.out.println("apiURL=" + apiURL);
-		    String res = requestToServer(apiURL,"");
-  
-		    return res;
-		  }
+	public String getRefreshToken(String refreshToken) throws IOException, ParseException {
+		String apiURL;
+		apiURL = "https://nid.naver.com/oauth2.0/token?grant_type=refresh_token&";
+		apiURL += "client_id=" + CLIENT_ID;
+		apiURL += "&client_secret=" + CLIENT_SECRET;
+		apiURL += "&refresh_token=" + refreshToken;
+		System.out.println("apiURL=" + apiURL);
+		String res = requestToServer(apiURL, "");
+
+		return res;
+	}
 
 	/* 세션 유효성 검증을 위한 난수 생성기 */
 	private String generateRandomString() {
@@ -120,8 +120,8 @@ public class NaverLoginBO {
 	public int post(OAuth2AccessToken oauthToken, String title, String contents, int flag) throws IOException {
 
 		Date date = new Date();
-		LOGGER.info(date+": 글쓰기 작성 시작");
-		
+		LOGGER.info(date + ": 글쓰기 작성 시작");
+
 		String subject = "";
 		String content = "";
 		String menuid = "";
@@ -130,13 +130,13 @@ public class NaverLoginBO {
 			String token = oauthToken.getAccessToken();// 네이버 로그인 접근 토큰;
 			String header = "Bearer " + token; // Bearer 다음에 공백 추가
 			String clubid = "30513537";// 카페의 고유 ID값
-			if(flag ==1) {
+			if (flag == 1) {
 				menuid = "1"; // 카페 게시판 id (상품게시판은 입력 불가)
 			}
-			if(flag ==2) {
+			if (flag == 2) {
 				menuid = "2"; // 카페 게시판 id (상품게시판은 입력 불가)
 			}
-			
+
 			String apiURL = "https://openapi.naver.com/v1/cafe/" + clubid + "/menu/" + menuid + "/articles";
 
 			URL url = new URL(apiURL);
@@ -176,23 +176,39 @@ public class NaverLoginBO {
 		return 1;
 
 	}
-	//네이버 뉴스 크롤링
+
+	// 네이버 뉴스 크롤링
 	public List newCrolling(int flag) throws IOException {
 		Document doc = null;
-		//해외증시
-		if(flag == 1) {
+		Elements head = null;
+		Elements body = null;
+		// 해외증시
+		if (flag == 1) {
 			doc = Jsoup.connect(
 					"https://finance.naver.com/news/news_list.nhn?mode=LSS3D&section_id=101&section_id2=258&section_id3=403")
 					.get();
 		}
-		//국내증시
-		else if(flag ==2) {
+		// 국내증시
+		else if (flag == 2) {
 			doc = Jsoup.connect(
 					"https://finance.naver.com/news/news_list.nhn?mode=LSS3D&section_id=101&section_id2=258&section_id3=401")
 					.get();
 		}
-		Elements head = doc.select(".articleSubject a");
-		Elements body = doc.select(".articleSummary");
+		// 다트
+		else if (flag == 3) {
+			doc = Jsoup.connect("http://dart.fss.or.kr/dsac001/mainAll.do").get();
+		}
+		if (flag == 1 || flag == 2) {
+
+			head = doc.select(".articleSubject a");
+			body = doc.select(".articleSummary");
+
+		} else {
+			head = doc.select("tr");
+			System.out.println("헤드: "+ head);
+			
+		}
+		
 		List result = new ArrayList<>();
 		List<String> titleList = new ArrayList<String>();
 		List<String> linkList = new ArrayList<String>();
@@ -205,95 +221,100 @@ public class NaverLoginBO {
 		result.add(linkList);
 		result.add(text);
 
-
 		return result;
 
 	}
 
 	@SuppressWarnings("unchecked")
 	public int crollingPost(OAuth2AccessToken oauthToken, int flag) throws IOException, InterruptedException {
-		
+
 		LOGGER.info("크롤링포스트 시작");
-		
-		//초기화
-		List resultList = null;					//크롤링한 리스트
-		List<String> titleList = null;			//제목 리스트
-		List<String> LinkList = null;			//링크 리스트
-		List<String> text = null;				//본문내용 리스트
-	
+
+		// 초기화
+		List resultList = null; // 크롤링한 리스트
+		List<String> titleList = null; // 제목 리스트
+		List<String> LinkList = null; // 링크 리스트
+		List<String> text = null; // 본문내용 리스트
+
 		String title = "";
 		String contents = "";
-		
-		//해외 증시 뉴스 가져오기
-		if(flag ==1) {
-		resultList = newCrolling(1);
+
+		// 해외 증시 뉴스 가져오기
+		if (flag == 1) {
+			resultList = newCrolling(1);
 		}
-		//국내증시
-		else if(flag ==2) {
+		// 국내증시
+		else if (flag == 2) {
 			resultList = newCrolling(2);
+		} else if (flag == 3) {
+			resultList = newCrolling(3);
+		}
+
+		titleList = (List<String>) resultList.get(0);
+		LinkList = (List<String>) resultList.get(1);
+		text = (List<String>) resultList.get(2);
+
+		if (flag == 1 || flag == 2) {
+			for (int i = 0; i < 10; i++) {
+
+				Date date = new Date();
+				LOGGER.info(date + "글등록");
+
+				title = titleList.get(i);
+				contents = "[링크] https://finance.naver.com/" + LinkList.get(i) + "<br><br>" + text.get(i);
+
+				if (flag == 2) {
+					post(oauthToken, title, contents, 2);
+				} else if (flag == 1) {
+					post(oauthToken, title, contents, 1);
+				}
+				System.out.println("개시시간 : " + date);
+				TimeUnit.SECONDS.sleep(120);
+
 			}
-		titleList = (List<String>)resultList.get(0);
-		LinkList = (List<String>)resultList.get(1);
-		text = (List<String>)resultList.get(2);
-		
-		
-		for(int i =0; i < 10; i++) {
-			
-			Date date = new Date();
-			LOGGER.info(date + "글등록");
-			
-			title = titleList.get(i);
-			contents = "[링크] https://finance.naver.com/"+LinkList.get(i)+"<br><br>"+text.get(i);
-			
-			if(flag ==2) {
-				post(oauthToken,title,contents,2);
-			}
-			else if(flag ==1) {
-				post(oauthToken,title,contents,1);
-			}
-			System.out.println("개시시간 : " + date);
-			TimeUnit.SECONDS.sleep(120);	
+		}
+		else {
 			
 		}
 		
 		return 1;
 	}
-	
-	
-	  /**
-	   * 서버 통신 메소드
-	   * @param apiURL
-	   * @param headerStr
-	   * @return
-	   * @throws IOException
-	   */
-	  private String requestToServer(String apiURL, String headerStr) throws IOException {
-	    URL url = new URL(apiURL);
-	    HttpURLConnection con = (HttpURLConnection)url.openConnection();
-	    con.setRequestMethod("GET");
-	    System.out.println("header Str: " + headerStr);
-	    if(headerStr != null && !headerStr.equals("") ) {
-	      con.setRequestProperty("Authorization", headerStr);
-	    }
-	    int responseCode = con.getResponseCode();
-	    BufferedReader br;
-	    System.out.println("responseCode="+responseCode);
-	    if(responseCode == 200) { // 정상 호출
-	      br = new BufferedReader(new InputStreamReader(con.getInputStream()));
-	    } else {  // 에러 발생
-	      br = new BufferedReader(new InputStreamReader(con.getErrorStream()));
-	    }
-	    String inputLine;
-	    StringBuffer res = new StringBuffer();
-	    while ((inputLine = br.readLine()) != null) {
-	      res.append(inputLine);
-	    }
-	    br.close();
-	    if(responseCode==200) {
-	      return res.toString();
-	    } else {
-	      return null;
-	    }
-	  }
+
+	/**
+	 * 서버 통신 메소드
+	 * 
+	 * @param apiURL
+	 * @param headerStr
+	 * @return
+	 * @throws IOException
+	 */
+	private String requestToServer(String apiURL, String headerStr) throws IOException {
+		URL url = new URL(apiURL);
+		HttpURLConnection con = (HttpURLConnection) url.openConnection();
+		con.setRequestMethod("GET");
+		System.out.println("header Str: " + headerStr);
+		if (headerStr != null && !headerStr.equals("")) {
+			con.setRequestProperty("Authorization", headerStr);
+		}
+		int responseCode = con.getResponseCode();
+		BufferedReader br;
+		System.out.println("responseCode=" + responseCode);
+		if (responseCode == 200) { // 정상 호출
+			br = new BufferedReader(new InputStreamReader(con.getInputStream()));
+		} else { // 에러 발생
+			br = new BufferedReader(new InputStreamReader(con.getErrorStream()));
+		}
+		String inputLine;
+		StringBuffer res = new StringBuffer();
+		while ((inputLine = br.readLine()) != null) {
+			res.append(inputLine);
+		}
+		br.close();
+		if (responseCode == 200) {
+			return res.toString();
+		} else {
+			return null;
+		}
+	}
 
 }
