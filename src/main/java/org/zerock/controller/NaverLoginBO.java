@@ -229,7 +229,8 @@ public class NaverLoginBO {
 	public int crollingPost(OAuth2AccessToken oauthToken, int flag) throws IOException, InterruptedException {
 
 		LOGGER.info("크롤링포스트 시작");
-
+		Document doc = null;
+		Elements body = null;
 		// 초기화
 		List resultList = null; // 크롤링한 리스트
 		List<String> titleList = null; // 제목 리스트
@@ -255,14 +256,27 @@ public class NaverLoginBO {
 		text = (List<String>) resultList.get(2);
 
 		if (flag == 1 || flag == 2) {
-			for (int i = 0; i < 10; i++) {
+			for (int i = 0; i < 1; i++) {
 
 				Date date = new Date();
 				LOGGER.info(date + "글등록");
-
+				System.out.println("주소:"+ LinkList.get(i));
+				
+				 doc = Jsoup.connect("http://dart.fss.or.kr/dsaf001/main.do?rcpNo=20210819800172").get();
+				 System.out.println(doc);
+				 body = doc.select(".xforms");
+				
+				//doc = Jsoup.connect("https://finance.naver.com" + LinkList.get(i)).get();
+				//body = doc.select(".articleCont");
+				//body.select(".link_news").remove();
+				//body.select(".end_photo_org").remove();
+				
+				System.out.println("바디="+body);
 				title = titleList.get(i);
-				contents = "[링크] https://finance.naver.com/" + LinkList.get(i) + "<br><br>" + text.get(i);
-
+				contents = body.html();
+				//따옴표 변환작업
+				contents = contents.replaceAll("\\\"", "\\\\\"");
+				contents += "<br> [출처] https://finance.naver.com"+ 	LinkList.get(i);	
 				if (flag == 2) {
 					post(oauthToken, title, contents, 2);
 				} else if (flag == 1) {

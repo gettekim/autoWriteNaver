@@ -8,10 +8,10 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -39,26 +39,27 @@ public class IndexController {
 	
 	@RequestMapping(value = "/croll")
 	public String naverlogin(HttpServletRequest request, Model model) throws IOException {
-		
-		Document doc = Jsoup.connect("https://finance.naver.com/news/news_list.nhn?mode=LSS3D&section_id=101&section_id2=258&section_id3=403").get();
-		Elements head = doc.select(".articleSubject a");
-		Elements body = doc.select(".articleSummary");
-		
-		
+		String cont = "";
+		Document doc = Jsoup.connect("https://finance.naver.com/news/news_read.nhn?article_id=0004593676&office_id=015").get();
+		Elements head = doc.select(".articleCont");
+		//Elements body = doc.select(".articleSummary");
+		head.select(".link_news").remove();
+		head.select(".end_photo_org").remove();
 		List<String> titleList = new ArrayList<String>();
 		List<String> LinkList = new ArrayList<String>();
 		List<String> text = new ArrayList<String>();
-		titleList = head.eachAttr("title");
+		titleList = head.eachAttr("br");
 		LinkList = head.eachAttr("href");
-		text = body.eachText();
-		
+		//text = body.eachText();
+		cont = head.html();
 		
 		
 		System.out.println("머리 = "+head);
-		System.out.println("몸 = "+body);
-		//System.out.println("제목결과 = "+titleList);
+		//System.out.println("몸 = "+body);
+		System.out.println("제목결과 = "+titleList);
 		//System.out.println("링크결과 = "+LinkList);
 		System.out.println("텍스트="+text);
+		System.out.println("테스트= "+ cont);
 		return "index";
 	}
 	

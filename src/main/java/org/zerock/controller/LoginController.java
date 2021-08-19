@@ -1,24 +1,25 @@
 package org.zerock.controller;
 
-import java.awt.Graphics2D;
-import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.sql.Time;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
-import javax.imageio.ImageIO;
 import javax.servlet.http.HttpSession;
 
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.By;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -176,31 +177,40 @@ public class LoginController {
 	}
 	
 	
-	/*
+	
 	//다트 내용가져오기
 	
 	@RequestMapping(value = "/screenshot")
-	public void screenshot() throws FileNotFoundException, IOException {
+	public void screenshot() throws FileNotFoundException, IOException, InterruptedException {
+		
 		
 		// 크롬 드라이버의 경로를 설정
 				System.setProperty("webdriver.chrome.driver", System.getProperty("user.dir") + "/chromedriver.exe");
 		    
 				// 드라이버 실행
 				WebDriver driver = new ChromeDriver();
-				driver.get("http://www.naver.com/");
+				driver.navigate().to("http://dart.fss.or.kr/dsaf001/main.do?rcpNo=20210819800172");
+			//	driver.get("http://dart.fss.or.kr/dsaf001/main.do?rcpNo=20210819800172");
+			
+				WebDriverWait wait = new WebDriverWait(driver, 10);
+				//WebElement parent = driver.findElement(By.id("LIB_LC000"));
+				TimeUnit.SECONDS.sleep(5);
 				
-				TakesScreenshot screenshot = (TakesScreenshot)driver;
-				byte[] imageByte = screenshot.getScreenshotAs(OutputType.BYTES);
-				try (FileOutputStream fos = new FileOutputStream(System.getProperty("user.dir") + "/screenshot.png")) {
-				   fos.write(imageByte);
-				   fos.close();
-				}
+		        System.out.println(driver.getPageSource());
+		        
+			
+//				TakesScreenshot screenshot = (TakesScreenshot)driver;
+//				byte[] imageByte = screenshot.getScreenshotAs(OutputType.BYTES);
+//				try (FileOutputStream fos = new FileOutputStream(System.getProperty("user.dir") + "/screenshot.png")) {
+//				   fos.write(imageByte);
+//				   fos.close();
+//				}
 				
 				// 드라이버 종료
 				driver.quit();
 		
 	}
-	*/
+
 	/*
 	//스크린샷 전체
 	@RequestMapping(value = "/hole")
