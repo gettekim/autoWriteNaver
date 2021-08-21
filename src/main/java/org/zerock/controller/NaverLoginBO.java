@@ -19,6 +19,11 @@ import org.json.simple.parser.ParseException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
@@ -116,6 +121,118 @@ public class NaverLoginBO {
 		return response.getBody();
 	}
 
+	// 카페글쓰기
+	@SuppressWarnings("unchecked")
+	public int crollingPost(OAuth2AccessToken oauthToken, int flag) throws IOException, InterruptedException {
+
+		LOGGER.info("크롤링포스트 시작");
+		Document doc = null;
+		Elements body = null;
+		// 초기화
+		List resultList = null; // 크롤링한 리스트
+		List<String> titleList = null; // 제목 리스트
+		List<String> LinkList = null; // 링크 리스트
+		List<String> text = null; // 본문내용 리스트
+
+		String title = "";
+		String contents = "";
+		if (flag == 1 || flag == 2) {
+			// 해외 증시 뉴스 가져오기
+			if (flag == 1) {
+				resultList = newCrolling(1);
+			}
+			// 국내증시
+			else if (flag == 2) {
+				resultList = newCrolling(2);
+			}
+			titleList = (List<String>) resultList.get(0);
+			LinkList = (List<String>) resultList.get(1);
+			text = (List<String>) resultList.get(2);
+
+			for (int i = 0; i < 10; i++) {
+
+				Date date = new Date();
+				LOGGER.info(date + "글등록");
+
+				doc = Jsoup.connect("https://finance.naver.com" + LinkList.get(i)).get();
+				body = doc.select(".articleCont");
+				body.select(".link_news").remove();
+				body.select(".end_photo_org").remove();
+
+				title = titleList.get(i);
+				contents = body.html();
+				// 따옴표 변환작업
+				contents = contents.replaceAll("\\\"", "\\\\\"");
+				contents += "<br> [출처] https://finance.naver.com" + LinkList.get(i);
+				if (flag == 2) {
+					post(oauthToken, title, contents, 2);
+				} else if (flag == 1) {
+					post(oauthToken, title, contents, 1);
+				}
+				System.out.println("개시시간 : " + date);
+				TimeUnit.SECONDS.sleep(65);
+
+			}
+		}
+		// 다트 일때
+		else {
+
+			String cont = "";
+			doc = Jsoup.connect(
+					"http://dart.fss.or.kr/report/viewer.do?rcpNo=20210819800172&dcmNo=8185915&eleId=0&offset=0&length=0&dtd=HTML")
+					.get();
+			doc.getElementsByTag("a").removeAttr("onclick");
+			body = doc.getElementsByClass("xforms");
+			cont = body.html();
+			cont = cont.replaceAll("\\\"", "\\\\\"");
+			title = "테스트";
+
+			post(oauthToken, title, cont, 3);
+		}
+		LOGGER.info("크롤링포스트 종료");
+		return 1;
+	}
+
+	// 네이버 뉴스 크롤링
+	public List newCrolling(int flag) throws IOException {
+		Document doc = null;
+		Elements head = null;
+		Elements body = null;
+		// 해외증시
+		if (flag == 1) {
+			doc = Jsoup.connect(
+					"https://finance.naver.com/news/news_list.nhn?mode=LSS3D&section_id=101&section_id2=258&section_id3=403")
+					.get();
+		}
+		// 국내증시
+		else if (flag == 2) {
+			doc = Jsoup.connect(
+					"https://finance.naver.com/news/news_list.nhn?mode=LSS3D&section_id=101&section_id2=258&section_id3=401")
+					.get();
+		}
+
+		if (flag == 1 || flag == 2) {
+
+			head = doc.select(".articleSubject a");
+			body = doc.select(".articleSummary");
+
+		}
+		List result = new ArrayList<>();
+		List<String> titleList = new ArrayList<String>();
+		List<String> linkList = new ArrayList<String>();
+		List<String> text = new ArrayList<String>();
+		titleList = head.eachAttr("title");
+		linkList = head.eachAttr("href");
+		text = body.eachText();
+
+		result.add(titleList);
+		result.add(linkList);
+		result.add(text);
+
+		return result;
+
+	}
+
 	/* Access Token을 이용하여 네이버 카페글쓰기 API를 호출 */
 	public int post(OAuth2AccessToken oauthToken, String title, String contents, int flag) throws IOException {
 
@@ -135,6 +252,9 @@ public class NaverLoginBO {
 			}
 			if (flag == 2) {
 				menuid = "2"; // 카페 게시판 id (상품게시판은 입력 불가)
+			}
+			if (flag == 3) {
+				menuid = "2";
 			}
 
 			String apiURL = "https://openapi.naver.com/v1/cafe/" + clubid + "/menu/" + menuid + "/articles";
@@ -177,120 +297,81 @@ public class NaverLoginBO {
 
 	}
 
-	// 네이버 뉴스 크롤링
-	public List newCrolling(int flag) throws IOException {
-		Document doc = null;
-		Elements head = null;
-		Elements body = null;
-		// 해외증시
-		if (flag == 1) {
-			doc = Jsoup.connect(
-					"https://finance.naver.com/news/news_list.nhn?mode=LSS3D&section_id=101&section_id2=258&section_id3=403")
-					.get();
-		}
-		// 국내증시
-		else if (flag == 2) {
-			doc = Jsoup.connect(
-					"https://finance.naver.com/news/news_list.nhn?mode=LSS3D&section_id=101&section_id2=258&section_id3=401")
-					.get();
-		}
-		// 다트
-		else if (flag == 3) {
-			doc = Jsoup.connect("http://dart.fss.or.kr/dsac001/mainAll.do").get();
-		}
-		if (flag == 1 || flag == 2) {
+	// 다트 크롤링
+	public int dartCrolling(OAuth2AccessToken oauthToken) throws IOException, InterruptedException {
 
-			head = doc.select(".articleSubject a");
-			body = doc.select(".articleSummary");
+		// 크롬 드라이버의 경로를 설정
+		System.setProperty("webdriver.chrome.driver", System.getProperty("user.dir") + "/chromedriver.exe");
 
-		} else {
-			head = doc.select("tr");
-			System.out.println("헤드: "+ head);
-			
-		}
+		// 드라이버 실행
+		ChromeOptions options = new ChromeOptions();
+		options.addArguments("headless");
 		
-		List result = new ArrayList<>();
-		List<String> titleList = new ArrayList<String>();
-		List<String> linkList = new ArrayList<String>();
-		List<String> text = new ArrayList<String>();
-		titleList = head.eachAttr("title");
-		linkList = head.eachAttr("href");
-		text = body.eachText();
-
-		result.add(titleList);
-		result.add(linkList);
-		result.add(text);
-
-		return result;
-
-	}
-
-	@SuppressWarnings("unchecked")
-	public int crollingPost(OAuth2AccessToken oauthToken, int flag) throws IOException, InterruptedException {
-
-		LOGGER.info("크롤링포스트 시작");
-		Document doc = null;
-		Elements body = null;
-		// 초기화
-		List resultList = null; // 크롤링한 리스트
-		List<String> titleList = null; // 제목 리스트
-		List<String> LinkList = null; // 링크 리스트
-		List<String> text = null; // 본문내용 리스트
-
+		WebElement parent = null;
 		String title = "";
+		Document doc = Jsoup.connect("https://dart.fss.or.kr/dsac001/mainAll.do").get();
+		//Document doc = Jsoup.connect("https://dart.fss.or.kr/dsac001/mainAll.do?selectDate=&sort=&series=&mdayCnt=3").get();
+		Elements time = null;
+		Elements name = null;
+		Elements content = null;
+		Elements type = null;
 		String contents = "";
+		int max = 0;
+		String tmp = "";
 
-		// 해외 증시 뉴스 가져오기
-		if (flag == 1) {
-			resultList = newCrolling(1);
+		List<String> text = new ArrayList<String>();
+		List<Integer> timeList = new ArrayList<Integer>();
+		List<String> nameList = new ArrayList<String>();
+		List<String> contentList = new ArrayList<String>();
+		List<String> typeList = new ArrayList<String>();
+		List<String> urlList = new ArrayList<String>();
+
+		time = doc.getElementsByClass("cen_txt");
+		name = doc.getElementsByClass("nobr");
+		type = doc.select(".nobr1 img");
+		doc.select("span").remove();
+		content = doc.select("td a");
+		nameList = name.eachText();
+		text = time.eachText();
+		contentList = content.eachText();
+		typeList = type.eachAttr("title");
+		urlList = content.eachAttr("href");
+
+		// 시간저장
+		for (int i = 0; i < text.size(); i++) {
+			if (text.get(i).length() == 5) {
+				timeList.add(Integer.parseInt(text.get(i).replace(":", "")));
+			}
+
 		}
-		// 국내증시
-		else if (flag == 2) {
-			resultList = newCrolling(2);
-		} else if (flag == 3) {
-			resultList = newCrolling(3);
-		}
 
-		titleList = (List<String>) resultList.get(0);
-		LinkList = (List<String>) resultList.get(1);
-		text = (List<String>) resultList.get(2);
+		for (int i = 0; i < contentList.size(); i++) {
 
-		if (flag == 1 || flag == 2) {
-			for (int i = 0; i < 1; i++) {
+			if (timeList.get(i) > max) {
+				tmp = contentList.get(i);
+				if (tmp.contains("단일판매")) {
 
-				Date date = new Date();
-				LOGGER.info(date + "글등록");
-				System.out.println("주소:"+ LinkList.get(i));
-				
-				 doc = Jsoup.connect("http://dart.fss.or.kr/dsaf001/main.do?rcpNo=20210819800172").get();
-				 System.out.println(doc);
-				 body = doc.select(".xforms");
-				
-				//doc = Jsoup.connect("https://finance.naver.com" + LinkList.get(i)).get();
-				//body = doc.select(".articleCont");
-				//body.select(".link_news").remove();
-				//body.select(".end_photo_org").remove();
-				
-				System.out.println("바디="+body);
-				title = titleList.get(i);
-				contents = body.html();
-				//따옴표 변환작업
-				contents = contents.replaceAll("\\\"", "\\\\\"");
-				contents += "<br> [출처] https://finance.naver.com"+ 	LinkList.get(i);	
-				if (flag == 2) {
-					post(oauthToken, title, contents, 2);
-				} else if (flag == 1) {
-					post(oauthToken, title, contents, 1);
+					title = "[" + typeList.get(i) + "] | " + nameList.get(i) + " | " + tmp;
+
+					System.out.println("결과" + title);
+					WebDriver driver = new ChromeDriver(options);
+					driver.get("https://dart.fss.or.kr" + urlList.get(i));
+					parent = driver.findElement(By.id("ifrm"));
+
+					doc = Jsoup.connect(parent.getAttribute("src")).get();
+					contents = doc.getElementsByClass("xforms").html();
+					contents = contents.replaceAll("\\\"", "\\\\\"");
+					post(oauthToken, title, contents, 3);
+					driver.quit();
+					TimeUnit.SECONDS.sleep(65);
+					
 				}
-				System.out.println("개시시간 : " + date);
-				TimeUnit.SECONDS.sleep(120);
-
 			}
 		}
-		else {
-			
-		}
-		
+
+		max = Integer.parseInt(text.get(0).replace(":", ""));
+	
+		LOGGER.info("다트글쓰기 완료");
 		return 1;
 	}
 
