@@ -38,7 +38,9 @@ import com.github.scribejava.core.oauth.OAuth20Service;
 public class NaverLoginBO {
 
 	private final Logger LOGGER = LoggerFactory.getLogger(NaverLoginBO.class.getName());
-
+	
+	int max = 0;
+	
 	// client_id: 애플리케이션 등록 후 발급받은 클라이언트 아이디
 	// response_type: 인증 과정에 대한 구분값. code로 값이 고정돼 있습니다.
 	// redirect_uri: 네이버 로그인 인증의 결과를 전달받을 콜백 URL(URL 인코딩). 애플리케이션을 등록할 때 Callback
@@ -52,7 +54,7 @@ public class NaverLoginBO {
 	private final static String SESSION_STATE = "oauth_state";
 	/* 프로필 조회 API URL */
 	private final static String PROFILE_API_URL = "https://openapi.naver.com/v1/nid/me";
-
+	
 	/* 네이버 아이디로 인증 URL 생성 Method */
 	public String getAuthorizationUrl(HttpSession session) {
 		/* 세션 유효성 검증을 위하여 난수를 생성 */
@@ -316,7 +318,6 @@ public class NaverLoginBO {
 		Elements content = null;
 		Elements type = null;
 		String contents = "";
-		int max = 0;
 		String tmp = "";
 
 		List<String> text = new ArrayList<String>();
@@ -326,11 +327,10 @@ public class NaverLoginBO {
 		List<String> typeList = new ArrayList<String>();
 		List<String> urlList = new ArrayList<String>();
 
-		time = doc.getElementsByClass("cen_txt");
-		name = doc.getElementsByClass("nobr");
-		type = doc.select(".nobr1 img");
-		doc.select("span").remove();
-		content = doc.select("td a");
+		time = doc.select("tr > td:first-of-type");
+		type = doc.select(".innerWrap span");
+		name = doc.select(".innerWrap a");
+		content = doc.select("tr > td:nth-child(3) > a");
 		nameList = name.eachText();
 		text = time.eachText();
 		contentList = content.eachText();
